@@ -61,7 +61,7 @@ app.get("/api/customers/:id", (req: Request, res: Response): void => {
 });
 
 /**
- * Record a purchase for a customer and update status based on points.
+ * Record a purchase for a customer and update status based on points and bonus system.
  * @route POST /api/customers/:id/purchase
  * @param req - Express request object
  * @param res - Express response object
@@ -79,9 +79,25 @@ app.post("/api/customers/:id/purchase", (req: Request, res: Response): void => {
 	const purchaseAmount: number = req.body.amount;
 	const storeLocation: string = req.body.storeLocation;
 
-	customer.points += Math.floor(purchaseAmount / 10);
+	// Validate purchase amount
+	if (!purchaseAmount || purchaseAmount <= 0) {
+		res.status(400).send("Invalid purchase amount");
+		return;
+	}
+
+	let basePoints = Math.floor(purchaseAmount / 10);
+
+	// Apply bonus points for high-value purchases
+	if (purchaseAmount > 5000) {
+		basePoints += Math.floor(basePoints * 0.2); // 20% bonus
+	} else if (purchaseAmount > 1000) {
+		basePoints += Math.floor(basePoints * 0.1); // 10% bonus
+	}
+
+	customer.points += basePoints;
 	customer.lastPurchaseDate = new Date().toISOString();
 
+	// Update customer status
 	if (customer.points >= 750) {
 		customer.status = "GOLD";
 		customer.lastStatusChange = new Date().toISOString();
@@ -90,7 +106,11 @@ app.post("/api/customers/:id/purchase", (req: Request, res: Response): void => {
 		customer.lastStatusChange = new Date().toISOString();
 	}
 
-	res.json(customer);
+	res.json({
+		message: "Purchase recorded successfully",
+		customer,
+		storeLocation,
+	});
 });
 
 /**

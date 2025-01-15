@@ -145,4 +145,43 @@ app.patch(
 	}
 );
 
+/**
+ * Update customer email if it is missing (legacy customer).
+ * @route PATCH /api/customers/:id/update-email
+ * @param req - Express request object
+ * @param res - Express response object
+ */
+app.patch("/api/customers/:id/update-email", (req: Request, res: Response): void => {
+	const customerId: number = parseInt(req.params.id);
+	const customer: Customer | undefined = customers.find(
+		(c) => c.id === customerId
+	);
+	if (!customer) {
+		res.status(404).send("Customer not found");
+		return;
+	}
+
+	// Check if email is missing (legacy customer)
+	if (!customer.email) {
+		const newEmail: string = req.body.email;
+
+		// Validate new email format
+		const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+		if (!newEmail || !emailRegex.test(newEmail)) {
+			res.status(400).send("Invalid email address");
+			return;
+		}
+
+		// Update the email
+		customer.email = newEmail;
+
+		res.json({
+			message: "Customer email updated successfully",
+			customer,
+		});
+	} else {
+		res.status(400).send("Customer already has an email address");
+	}
+});
+
 export default app;

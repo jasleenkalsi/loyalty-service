@@ -172,7 +172,7 @@ app.patch("/api/customers/:id/update-email", (req: Request, res: Response): void
 			return;
 		}
 
-		// Update the email
+		// update the email 
 		customer.email = newEmail;
 
 		res.json({
